@@ -316,7 +316,54 @@ def get_new_index_n(total_data, selected_condensed, n, select_from_n, selected_n
         index = get_single_index(total_data, indices, selected_n, c_threshold=None, n_ary = n_ary, weight = 'nw')
     return index
 
-def extract_dataset(files, n_arys, c_thresholds, max_n, start):
+def load_data(file_path):
+    # Controlla l'estensione del file per determinare come caricarlo
+    extension = os.path.splitext(file_path)[1]
+    if extension == '.parquet':
+        return pd.read_parquet(file_path)
+    elif extension == '.pkl':
+        with open(file_path, 'rb') as f:
+            return pickle.load(f)
+    else:
+        raise ValueError(f"Unsupported file format: {extension}")
+
+def save_data(data, n_ary, c_threshold, max_n, base_name, format='pkl', directory='output'):
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+    base_file_name = f"{n_ary}_{c_threshold}_{max_n}_{base_name}"
+    file_path = os.path.join(directory, base_file_name + f'.{format}')
+
+    if os.path.exists(file_path):
+        # Carica i dati esistenti utilizzando la funzione load_data
+        existing_data = load_data(file_path)
+        if len(existing_data) >= max_n:
+            counter = 1
+            while True:
+                new_file_path = os.path.join(directory, f"{base_file_name}_{counter}.{format}")
+                if not os.path.exists(new_file_path):
+                    file_path = new_file_path
+                    break
+                counter += 1
+        else:
+            # Combina i dati esistenti con i nuovi dati, se possibile
+            if isinstance(data, list) and isinstance(existing_data, list):
+                data = existing_data + data
+            elif isinstance(data, pd.DataFrame) and isinstance(existing_data, pd.DataFrame):
+                data = pd.concat([existing_data, data], ignore_index=True)
+
+    # Salva i dati nel formato appropriato
+    if format == 'parquet':
+        if not isinstance(data, pd.DataFrame):
+            data = pd.DataFrame(data)
+        data.to_parquet(file_path, index=False)
+    else:
+        with open(file_path, 'wb') as f:
+            pickle.dump(data, f)
+    
+    print(f"Data saved to {file_path} in {format} format.")
+
+def extract_dataset(files, n_arys, c_thresholds, max_n, start, output_format='pkl'):
     # Main loop
     DiversityDict = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
     for n_ary in n_arys:
@@ -400,7 +447,8 @@ def extract_dataset(files, n_arys, c_thresholds, max_n, start):
                         n = len(selected_n)
                         print(selected_n)
                     DiversityDict[n_ary][c_threshold][base_name] = selected_n
-                    file_name = f"{n_ary}_{c_threshold}_{base_name}.pkl"
-                    #Create a pickle file with the selected molecules
-                    with open(file_name, 'wb') as f:
-                        pickle.dump(selected_n, f)
+                    # file_name = f"{n_ary}_{c_threshold}_{max_n}_{base_name}.pkl"
+                    # #Create a pickle file with the selected molecules
+                    # with open(file_name, 'wb') as f:
+                    #     pickle.dump(selected_n, f)
+                    save_data(selected_n, n_ary, c_threshold, max_n, base_name, format=output_format, directory='output')

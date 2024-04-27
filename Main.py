@@ -10,15 +10,15 @@ n_arys = ['AC']# 'BUB' , 'CT1', 'CT2', 'CT3', 'CT4', 'Fai',
 c_thresholds = ['dissimilar']
 
 # Number of molecules to select
-max_n = 10
+max_n = 5
 
 # Seed selection:
 # medoid = start from medoid
 # random = select random initial seed
 # out = start from outlier
 start = 'medoid'
-files = ["ECS_MeDiv/sample_calculations/normalized_CYP_SH2_data/CYP_complex_MD_10_final_formatted_uniform.npy"]
+input_files = ["ECS_MeDiv/sample_calculations/normalized_CYP_SH2_data/CYP_complex_MD_10_final_formatted_uniform.npy"]
 
 ####################### MAIN #################
 # Extract dataset
-extract_dataset(files, n_arys, c_thresholds, max_n, start)
+extract_dataset(input_files, n_arys, c_thresholds, max_n, start, output_format='pkl')
